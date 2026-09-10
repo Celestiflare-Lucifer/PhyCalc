@@ -193,7 +193,7 @@ UI_SPEC_OVERRIDE = {
     ],
 }
 
-DEFAULT_WINDOW_SIZE = "600x500"
+DEFAULT_WINDOW_SIZE = "650x500"
 ```
 
 保存后，主菜单会自动识别并使用这个专用页面。**不需要写任何界面代码。**
@@ -290,7 +290,7 @@ print(result)
 
 ## 🙋 参与贡献
 
-目前 **PhyCalc 的开发者仅我一人**。
+目前PhyCalc 的开发者仅我一人。
 
 项目的整体框架、交互逻辑、扩展接口由我自行设计；大部分具体代码使用 AI 辅助生成。可以说，这是一个**人机协作**的作品——我负责想清楚“要什么”，AI 负责帮忙“怎么写”，然后我再来回测试、调整、打磨。
 
@@ -310,7 +310,6 @@ print(result)
 - **当前版本**：v1.0
 - **Python 版本**：3.8+
 - **依赖库**：仅标准库（Tkinter、json、math 等）
-- **开源许可**：建议使用 [MIT License](https://opensource.org/licenses/MIT)，你可以自由使用、修改、分发本项目的代码。
 
 ---
 
