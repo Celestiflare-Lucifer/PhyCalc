@@ -2,6 +2,14 @@
 """
 PhyCalc - 格物算：大学物理实验数据处理工具
 主菜单
+
+命名规则：
+    core_calculations/n.m_中文名_英文名_core.py
+    ui_pages/n.m_中文名_英文名_ui.py
+其中：
+    n = 章号（整数），m = 节号（整数，可为 0 表示只有章）
+如：1.2_不确定度估算与测量结果表示_uncertainty_estimation_core.py
+显示为：1.2 不确定度估算与测量结果表示
 """
 import os
 import sys
@@ -9,12 +17,11 @@ import json
 import glob
 import importlib.util
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import messagebox, simpledialog
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-# ========== 项目元信息 ==========
-APP_VERSION = 'v0.1.0'
+APP_VERSION = 'v0.2.0'
 
 ABOUT_TEXT = {
     'zh': (
@@ -24,24 +31,23 @@ ABOUT_TEXT = {
         "作者：星辰蝶语 (Celestiflare Lucifer)\n\n"
         "本工具基于 DeepSeek + Python + Tkinter 制作，\n"
         "使用 PyInstaller 打包分发。\n\n"
-        "如有需要，可通过GitHub个人页面联系作者，\n"
+        "如有需要，可通过 GitHub 个人页面联系作者，\n"
         "或者发送邮件到：15114671359@nefu.edu.cn\n\n"
         "感谢使用！"
     ),
     'en': (
-        "PhyCalc · Scientific Calculations\n"
-        "Scientific Calculations: A Data Processing Tool for University Physics Experiments\n\n"        
-        f"Version: {APP_VERSION}\n\n"        
-        "Author: Celestiflare Lucifer\n\n"        
-        "This tool is developed based on DeepSeek + Python + Tkinter,\n"
-        "and distributed using PyInstaller.\n"        
-        "If needed, you can contact the author through the GitHub profile,\n"
-        "or send an email to: 15114671359@nefu.edu.cn\n\n"        
+        "PhyCalc\n"
+        "A Data Processing Tool for University Physics Experiments\n\n"
+        f"Version: {APP_VERSION}\n\n"
+        "Author: Celestiflare Lucifer\n\n"
+        "Developed with DeepSeek + Python + Tkinter,\n"
+        "distributed using PyInstaller.\n\n"
+        "Contact via GitHub profile,\n"
+        "or email: 15114671359@nefu.edu.cn\n\n"
         "Thank you for using!"
     )
 }
 
-# ========== 语言字典 ==========
 LANG = {
     'zh': {
         'app_title': '格物算：大学物理实验数据处理工具',
@@ -54,14 +60,8 @@ LANG = {
         'layout_button': '按钮模式',
         'layout_text': '文字模式',
         'default_size': '默认窗口大小',
-        'increase_font': '增大字体',
-        'decrease_font': '减小字体',
         'no_experiments': '未找到实验选项',
         'restart_hint': '更改默认窗口大小需要重启程序生效。',
-        'width': '宽度：',
-        'height': '高度：',
-        'chapter': '第{0}章',
-        'chapter_en': 'Chapter {0}',
         'ok': '确定',
     },
     'en': {
@@ -75,14 +75,8 @@ LANG = {
         'layout_button': 'Button Mode',
         'layout_text': 'Text Mode',
         'default_size': 'Default Window Size',
-        'increase_font': 'Increase Font',
-        'decrease_font': 'Decrease Font',
         'no_experiments': 'No experiments found.',
         'restart_hint': 'Changing default window size requires restart.',
-        'width': 'Width:',
-        'height': 'Height:',
-        'chapter': 'Chapter {0}',
-        'chapter_en': 'Chapter {0}',
         'ok': 'OK',
     }
 }
@@ -110,7 +104,6 @@ def load_settings():
 
 
 def save_settings(settings):
-    """保存设置。写失败时只打印警告，不打断主流程。"""
     try:
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
             json.dump(settings, f, indent=4, ensure_ascii=False)
@@ -137,13 +130,9 @@ class MainApp:
         self.create_toolbar()
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
-
         self.scan_experiments()
-
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-    # ---------------------------------------------------------------
-    # 通用辅助
     # ---------------------------------------------------------------
     def get_font(self, size=None):
         if size is None:
@@ -151,9 +140,6 @@ class MainApp:
         family = "Times New Roman" if self.lang == 'en' else "宋体"
         return (family, size)
 
-    # ---------------------------------------------------------------
-    # 工具栏
-    # ---------------------------------------------------------------
     def create_toolbar(self):
         toolbar = tk.Frame(self.root, bg='lightgray', height=30)
         toolbar.pack(side=tk.TOP, fill=tk.X)
@@ -215,8 +201,6 @@ class MainApp:
                                        command=self.set_default_size)
 
     # ---------------------------------------------------------------
-    # 语言
-    # ---------------------------------------------------------------
     def set_language_zh(self):
         self.set_language('zh')
 
@@ -229,18 +213,13 @@ class MainApp:
         self.lang = lang
         self.settings['language'] = lang
 
-        # 先刷新界面，再持久化
         self.root.title(LANG[lang]['app_title'])
         self.about_btn.config(text=LANG[lang]['about'])
         self.settings_btn.config(text=LANG[lang]['settings'])
         self._build_settings_menu()
         self.scan_experiments()
-
         save_settings(self.settings)
 
-    # ---------------------------------------------------------------
-    # 精度 / 布局 / 窗口大小 / 字号
-    # ---------------------------------------------------------------
     def set_precision(self):
         dlg = simpledialog.askinteger("精度设置", "请输入小数位数（整数）：",
                                       initialvalue=self.precision)
@@ -297,27 +276,40 @@ class MainApp:
         self.scan_experiments()
 
     # ---------------------------------------------------------------
-    # 从 core 文件读取标题（zh / en）
-    # ---------------------------------------------------------------
-    def _read_core_titles(self, core_path):
-        """
-        加载 core 模块并读取 UI_SPEC['title']。
-        返回 (zh_title, en_title) 或 (None, None)。
-        """
+    # 解析文件名：'1.2_中文名_英文名_core' → (1, 2)
+    @staticmethod
+    def _parse_chapter_section(basename):
+        stem = basename
+        if stem.endswith('.py'):
+            stem = stem[:-3]
+        if stem.endswith('_core'):
+            stem = stem[:-5]
+
+        parts = stem.split('_', 1)
+        if len(parts) < 2:
+            return None, None
+
+        num = parts[0]
+        if '.' in num:
+            ch_s, sec_s = num.split('.', 1)
+            if ch_s.isdigit() and sec_s.isdigit():
+                return int(ch_s), int(sec_s)
+        elif num.isdigit():
+            return int(num), None
+        return None, None
+
+    def _load_core_spec(self, core_path):
         try:
             spec = importlib.util.spec_from_file_location(
-                f"_scan_{id(core_path)}", core_path
+                f"_scan_{abs(hash(core_path))}", core_path
             )
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
-            title = getattr(mod, 'UI_SPEC', {}).get('title', {})
-            return title.get('zh'), title.get('en')
+            return getattr(mod, 'UI_SPEC', None)
         except Exception as e:
-            print(f"[扫描] 无法读取 {core_path} 的标题：{e}")
-            return None, None
+            print(f"[扫描] 无法读取 {core_path}：{e}")
+            return None
 
-    # ---------------------------------------------------------------
-    # 扫描 core_calculations 并跳过 00_ 模板
     # ---------------------------------------------------------------
     def scan_experiments(self):
         for widget in self.main_frame.winfo_children():
@@ -331,8 +323,10 @@ class MainApp:
 
         pattern = os.path.join(core_dir, '*_core.py')
         all_files = glob.glob(pattern)
-        core_files = [f for f in all_files
-                      if not os.path.basename(f).startswith('00_')]
+        core_files = [
+            f for f in all_files
+            if not os.path.basename(f).startswith(('00_', '0.0_'))
+        ]
 
         if not core_files:
             tk.Label(self.main_frame, text=LANG[self.lang]['no_experiments'],
@@ -342,29 +336,51 @@ class MainApp:
         experiments = []
         for f in core_files:
             basename = os.path.basename(f)
-            stem = basename[:-3] if basename.endswith('.py') else basename
-            parts = stem.split('_')
-            # 标准命名：nn_中文名_英文名_core
-            if len(parts) >= 3 and parts[-1] == 'core' and parts[0].isdigit():
-                nn = int(parts[0])   # int 转换，自动去掉前导零
+            chapter, section = self._parse_chapter_section(basename)
 
-                # 优先从 core 模块读取标题
-                zh_title, en_title = self._read_core_titles(f)
+            spec = self._load_core_spec(f)
+            spec_chapter = spec_section = None
+            zh_title = en_title = None
+            if spec:
+                title = spec.get('title', {})
+                zh_title = title.get('zh')
+                en_title = title.get('en')
+                if spec.get('chapter') is not None:
+                    spec_chapter = spec['chapter']
+                if spec.get('section') is not None:
+                    spec_section = spec['section']
 
-                # 回退：文件名解析
-                if not zh_title or not en_title:
-                    zh_title = parts[1]
-                    en_title = '_'.join(parts[2:-1]).replace('_', ' ').title()
+            if spec_chapter is not None:
+                chapter = spec_chapter
+            if spec_section is not None:
+                section = spec_section
 
-                experiments.append((nn, zh_title, en_title, f))
-            else:
-                # 非标准命名：整名显示
-                experiments.append((None, basename, basename, f))
+            if chapter is None:
+                experiments.append({
+                    'sort_key': None,
+                    'chapter': None, 'section': None,
+                    'zh': basename, 'en': basename,
+                    'path': f,
+                })
+                continue
 
-        standard = [e for e in experiments if e[0] is not None]
-        non_std = [e for e in experiments if e[0] is None]
-        standard.sort(key=lambda x: x[0])
-        non_std.sort(key=lambda x: x[1])
+            if not zh_title:
+                zh_title = basename
+            if not en_title:
+                en_title = basename
+
+            sort_key = (chapter, section if section is not None else 0)
+            experiments.append({
+                'sort_key': sort_key,
+                'chapter': chapter, 'section': section,
+                'zh': zh_title, 'en': en_title,
+                'path': f,
+            })
+
+        standard = [e for e in experiments if e['sort_key'] is not None]
+        non_std = [e for e in experiments if e['sort_key'] is None]
+        standard.sort(key=lambda x: x['sort_key'])
+        non_std.sort(key=lambda x: x['zh'])
         sorted_exps = standard + non_std
 
         if self.layout_mode == 'button':
@@ -372,20 +388,17 @@ class MainApp:
         else:
             self._display_text(sorted_exps)
 
-    # ---------------------------------------------------------------
-    # 按钮文字
-    #   中文：第1章 平均值与不确定度计算          （不带前导零）
-    #   英文：Chapter 1 Average and Uncertainty Calculation
-    #   nn 已为 int，f"{nn}" 天然不带前导零
-    # ---------------------------------------------------------------
-    def _format_label(self, nn, zh_title, en_title):
-        if nn is not None:
-            if self.lang == 'zh':
-                return f"第{nn}章 {zh_title}"
-            else:
-                return f"Chapter {nn} {en_title}"
-        else:
-            return zh_title
+    def _format_label(self, exp):
+        if exp['chapter'] is None:
+            return exp['zh']
+
+        title = exp['zh'] if self.lang == 'zh' else exp['en']
+        ch = exp['chapter']
+        sec = exp['section']
+
+        if sec is not None and sec > 0:
+            return f"{ch}.{sec} {title}"
+        return f"{ch} {title}"
 
     def _display_buttons(self, experiments):
         n = len(experiments)
@@ -400,11 +413,10 @@ class MainApp:
         for i, exp in enumerate(experiments):
             row = i // cols
             col = i % cols
-            nn, zh, en, core_path = exp
-            text = self._format_label(nn, zh, en)
+            text = self._format_label(exp)
 
             btn = tk.Button(container, text=text, font=self.get_font(),
-                            command=lambda p=core_path: self.launch_experiment(p))
+                            command=lambda p=exp['path']: self.launch_experiment(p))
             btn.grid(row=row, column=col, padx=10, pady=5, sticky='nsew')
 
         for col in range(cols):
@@ -417,20 +429,15 @@ class MainApp:
         container.pack(expand=True, fill=tk.BOTH)
 
         for exp in experiments:
-            nn, zh, en, core_path = exp
-            text = self._format_label(nn, zh, en)
-
+            text = self._format_label(exp)
             lbl = tk.Label(container, text=text, font=self.get_font(),
                            fg='blue', cursor='hand2')
             lbl.pack(pady=2, anchor='center')
             lbl.bind('<Button-1>',
-                     lambda e, p=core_path: self.launch_experiment(p))
+                     lambda e, p=exp['path']: self.launch_experiment(p))
 
     # ---------------------------------------------------------------
-    # 打开实验页面
-    # ---------------------------------------------------------------
     def launch_experiment(self, core_path):
-        # ---------- 1. 加载 core 模块 ----------
         try:
             spec = importlib.util.spec_from_file_location("core_module", core_path)
             core_module = importlib.util.module_from_spec(spec)
@@ -439,9 +446,12 @@ class MainApp:
             messagebox.showerror("错误", f"加载核心模块失败: {e}")
             return
 
-        # ---------- 2. 加载通用页面 ----------
         page_dir = os.path.join(os.path.dirname(__file__), 'ui_pages')
-        generic_path = os.path.join(page_dir, '00_通用_generic_page.py')
+        # 通用 UI 现在使用 _ui 后缀
+        generic_path = os.path.join(page_dir, '0.0_通用_generic_ui.py')
+        if not os.path.exists(generic_path):
+            # 兼容老版本
+            generic_path = os.path.join(page_dir, '00_通用_generic_page.py')
         if not os.path.exists(generic_path):
             messagebox.showerror("错误", "通用页面模板缺失！")
             return
@@ -453,9 +463,9 @@ class MainApp:
             messagebox.showerror("错误", f"加载通用页面失败: {e}")
             return
 
-        # ---------- 3. 尝试加载专用页面 ----------
         core_basename = os.path.basename(core_path)
-        page_basename = core_basename.replace('_core.py', '_page.py')
+        # 把 _core.py 替换为 _ui.py
+        page_basename = core_basename.replace('_core.py', '_ui.py')
         page_path = os.path.join(page_dir, page_basename)
 
         override_module = None
@@ -468,14 +478,12 @@ class MainApp:
                 messagebox.showerror("错误", f"加载专用页面失败: {e}")
                 return
 
-        # ---------- 4. 初始 settings ----------
         settings = {
             'language': self.lang,
             'precision': self.precision,
             'font_size': self.font_size,
         }
 
-        # ---------- 5. 专用页面若自带 open_page → 完全自定义 ----------
         if override_module is not None and hasattr(override_module, 'open_page'):
             try:
                 win = override_module.open_page(self.root, settings, core_module)
@@ -488,7 +496,6 @@ class MainApp:
                 messagebox.showerror("错误", f"打开自定义页面失败: {e}")
                 return
 
-        # ---------- 6. 否则走通用界面 ----------
         try:
             win = generic_module.open_page(
                 self.root, settings, core_module,
@@ -501,9 +508,6 @@ class MainApp:
         except Exception as e:
             messagebox.showerror("错误", f"打开实验页面失败: {e}")
 
-    # ---------------------------------------------------------------
-    # 子窗口管理
-    # ---------------------------------------------------------------
     def _on_child_close(self, win):
         if win in self.child_windows:
             self.child_windows.remove(win)
