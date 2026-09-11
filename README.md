@@ -118,14 +118,18 @@ python main.py
 ```
 PhyCalc/
 ├── README.md
-├── main.py                                          # 唯一启动文件（一级菜单）
-├── settings.json                                    # 自动生成，保存用户设置
-├── ui_pages/                                        # 二级交互界面
-│   ├── 0.0_通用_generic_ui.py                       # 通用 UI 模板
-│   └── 1.2_不确定度估算与测量结果表示_uncertainty_estimation_ui.py
-└── core_calculations/                               # 纯计算逻辑
-    ├── 0.0_通用_generic_core.py                      # 通用计算模板
-    └── 1.2_不确定度估算与测量结果表示_uncertainty_estimation_core.py
+├── main.py
+├── settings.json
+├── ui_pages/
+│   ├── 0.0_通用_generic_ui.py
+│   ├── 1.2_不确定度估算与测量结果表示_uncertainty_estimation_ui.py
+│   ├── 1.4_常用的实验数据处理方法_common_data_processing_ui.py
+│   └── 2.1_长度测量和体积测量_length_and_volume_measurement_ui.py
+└── core_calculations/
+    ├── 0.0_通用_generic_core.py
+    ├── 1.2_不确定度估算与测量结果表示_uncertainty_estimation_core.py
+    ├── 1.4_常用的实验数据处理方法_common_data_processing_core.py
+    └── 2.1_长度测量和体积测量_length_and_volume_measurement_core.py
 ```
 
 ### 命名规则
@@ -173,7 +177,7 @@ n.m_中文名_英文名_core.py
 ```python
 UI_SPEC = {
     'title': {'zh': '实验中文名', 'en': 'Experiment English Name'},
-    'chapter': 1, 'section': 2,                 # 章节号（可选，文件名已带可省略）
+    'chapter': 7, 'section': 2,                 # 章节号（可选，文件名已带可省略）
     'inputs': [
         {
             'name': 'data',                     # 变量名，将作为 calculate 的参数
@@ -223,7 +227,7 @@ UI_SPEC_OVERRIDE = {
     ],
 }
 
-DEFAULT_WINDOW_SIZE = "750x600"
+DEFAULT_WINDOW_SIZE = "800x750"
 ```
 
 保存后，主菜单会自动识别并使用这个专用界面。**不需要写任何界面代码。**
@@ -286,10 +290,57 @@ print(result)
 
 以下是仓库目前已经完成的实验，以及后续计划补充的实验（持续更新中）：
 
-| 编号 | 实验名 | 状态 |
-|------|--------|------|
-| 1.2 | 不确定度估算与测量结果表示 | ✅ 已完成 |
-| 后续 | 其他实验 | 🚧 逐步补充中 |
+<table>
+  <thead>
+    <tr>
+      <th>实验章节</th>
+      <th>章节名</th>
+      <th>小节编号</th>
+      <th>小节名</th>
+      <th>状态</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="2">第一章</td>
+      <td rowspan="2">数据处理与不确定度估算</td>
+      <td>1.2</td>
+      <td>不确定度估算与测量结果表示</td>
+      <td>✅ 已完成</td>
+    </tr>
+    <tr>
+      <td>1.4</td>
+      <td>常用的实验数据处理方法</td>
+      <td>✅ 已完成</td>
+    </tr>
+    <tr>
+      <td rowspan="2">第二章</td>
+      <td rowspan="2">基础实验</td>
+      <td>2.1</td>
+      <td>长度测量和体积测量</td>
+      <td>✅ 已完成</td>
+    </tr>
+    <tr>
+      <td>—</td>
+      <td>待补充</td>
+      <td>🚧 逐步补充中</td>
+    </tr>
+    <tr>
+      <td>第三章</td>
+      <td>综合实验</td>
+      <td>—</td>
+      <td>—</td>
+      <td>🚧 待补充</td>
+    </tr>
+    <tr>
+      <td>后续章节</td>
+      <td>—</td>
+      <td>—</td>
+      <td>其他实验</td>
+      <td>🚧 逐步补充中</td>
+    </tr>
+  </tbody>
+</table>
 
 > 如果你希望某个具体实验优先开发，欢迎在 Issues 中留言。
 
