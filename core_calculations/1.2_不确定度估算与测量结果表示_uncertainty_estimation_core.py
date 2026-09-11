@@ -1,77 +1,124 @@
 # -*- coding: utf-8 -*-
 """
-实验中文名：不确定度估算与测量结果表示
-实验英文名：Uncertainty Estimation and Result Expression
+专用 UI - 不确定度估算与测量结果表示
+文件名：1.2_不确定度估算与测量结果表示_uncertainty_estimation_ui.py
 
-文件名：1.2_不确定度估算与测量结果表示_uncertainty_estimation_core.py
-章节：第 1 章第 2 节
+本文件只包含从 0.0_通用_generic_ui.py 的【A】区复制的配置变量。
+通用窗口构建、控件布局、语言切换、字体调节等逻辑
+全部由通用界面统一实现。
 
-依据教材：冯放, 牟艳秋. 大学物理实验[M]. 北京: 高等教育出版社, 2017.
+主菜单加载规则：
+    · 若本文件未定义 open_page()，则本文件被视为「配置模块」，
+      其 LANG_OVERRIDE / UI_SPEC_OVERRIDE / DEFAULT_WINDOW_SIZE
+      会被传给通用界面，覆盖其默认值；
+    · 若本文件定义了 open_page()，主菜单会直接调用它（高级用法）。
 
-本实验实现以下内容：
-    1) 多次测量（n ≥ 2）：A 类 + B 类不确定度合成
-       u_A = √[ Σ(xi - x̄)² / (n(n-1)) ]
-       u_B = Δ_仪 / k（k 由仪器误差的分布类型决定）
-       u   = √(u_A² + u_B²)
-    2) 单次测量（n = 1）：仅由 B 类不确定度决定
-    3) 相对不确定度：U_r = u / x̄ × 100%
-    4) 测量结果表示：x = x̄ ± u  (置信概率 P = 0.683)
+--------------------------------------------------------------------
+【各字段含义速查】（字段写在 UI_SPEC_OVERRIDE['inputs'] 里）
+--------------------------------------------------------------------
+    name         : 变量名，将作为 calculate() 的关键字参数。
+    label        : {'zh': ..., 'en': ...} 输入的显示标题。
+    type         : 'list' / 'float' / 'int' / 'text' / 'choice'
+    initial      : (仅 list) 初始显示几行输入框。
+    item_prefix  : (仅 list) 每行前缀，会显示为 “前缀_编号”，如 x_1。
+    unit         : (仅 list/float) 单位文字，显示在输入框右侧。
+    hint         : {'zh': ..., 'en': ...} 显示在输入组顶部或右侧的灰色提示。
+    default      : 默认值（显示在输入框中）。
+    options      : (仅 choice) 选项列表，每项含 value 和 label。
+--------------------------------------------------------------------
 """
 
-import math
-import sys
-
-
 # ============================================================
-# 1. UI 规格定义
+# 【A】个性化配置区
 # ============================================================
-UI_SPEC = {
-    'title': {
-        'zh': '不确定度估算与测量结果表示',
-        'en': 'Uncertainty Estimation and Result Expression',
-    },
-    'chapter': 1,
-    'section': 2,
 
+# ----------------------------------------------------------------------------
+# A-1. 语言覆盖
+#     本实验沿用通用界面的所有提示文字，不新增，故设为 None。
+#     若想覆盖某条文字，可写：
+#         LANG_OVERRIDE = {
+#             'zh': {'calculate': '开始计算'},
+#             'en': {'calculate': 'Start'},
+#         }
+# ----------------------------------------------------------------------------
+LANG_OVERRIDE = None
+
+
+# ----------------------------------------------------------------------------
+# A-2. UI_SPEC 覆盖
+#     本实验的输入结构由 core 文件定义，这里“整体替换 inputs 数组”，
+#     目的是为本实验的每个输入项补充更详尽、更贴合教材的提示文字。
+#
+#     ⚠️ 注意：这里是“整体替换”，不是“逐项合并”。
+#        如果你只想改某一项的提示，也必须写出完整的 inputs 数组，
+#        并且保证数组顺序与 core 文件中的顺序一致。
+# ----------------------------------------------------------------------------
+UI_SPEC_OVERRIDE = {
     'inputs': [
-        # -------- 直接测量数据 --------
+        # ================================================================
+        # 输入项 1：直接测量数据
+        # ----------------------------------------------------------------
+        # 对应 calculate() 中的参数名：data
+        # 类型：list（多行输入，可动态增删）
+        # ----------------------------------------------------------------
         {
-            'name': 'data',
-            'label': {
+            'name': 'data',                              # 参数名（必须与 core 一致）
+            'label': {                                   # 输入组的标题
                 'zh': '直接测量数据 x',
                 'en': 'Direct Measurement Data x',
             },
-            'type': 'list',
-            'initial': 6,
-            'item_prefix': {'zh': 'x', 'en': 'x'},
-            'unit': '',
-            'hint': {
-                'zh': '请输入对同一物理量重复测量的数据（至少 2 个以计算 A 类不确定度）。\n'
-                      '若为单次测量，可只填 1 个数据，此时 A 类不确定度记为 0。\n'
-                      '留空的输入框会被自动忽略。',
-                'en': 'Enter repeated measurements of the same quantity '
-                      '(at least 2 for Type A). For single measurement, '
-                      'input just 1 value and Type A is set to 0. '
-                      'Empty rows are ignored.',
+            'type': 'list',                              # 多行列表
+            'initial': 6,                                # 初始显示 6 行
+            'item_prefix': {                             # 每行前缀，最终显示为 x_1、x_2…
+                'zh': 'x',
+                'en': 'x',
             },
-            'default': [],
+            'unit': '',                                  # 无单位（数据本身带单位由用户输入）
+            'hint': {                                    # 顶部灰色提示文字
+                'zh': '按教材 1.2 节的步骤，请输入对同一物理量重复测量得到的数据。\n'
+                      '• 重复测量（n ≥ 2）：系统将计算 A 类 + B 类不确定度并合成；\n'
+                      '• 单次测量（n = 1）：只输入一个数据，A 类不确定度视为 0；\n'
+                      '• 留空的输入框会被自动忽略，不参与计算。',
+                'en': 'Enter repeated measurements of the same physical quantity.\n'
+                      '• n ≥ 2: Type A + Type B will be combined;\n'
+                      '• n = 1: Type A is set to 0 (single measurement);\n'
+                      '• Empty rows are ignored.',
+            },
+            'default': [],                               # 默认值列表（空）
         },
-        # -------- 仪器误差 --------
+
+        # ================================================================
+        # 输入项 2：仪器误差
+        # ----------------------------------------------------------------
+        # 对应 calculate() 中的参数名：instrument_error
+        # 类型：float（单个浮点数）
+        # ----------------------------------------------------------------
         {
             'name': 'instrument_error',
             'label': {
                 'zh': '仪器误差 Δ仪',
                 'en': 'Instrument Error Δ',
             },
-            'type': 'float',
-            'unit': '',
+            'type': 'float',                             # 单值浮点数
+            'unit': '',                                  # 单位由用户根据仪器自行判断
             'hint': {
-                'zh': '按仪器说明书给出，或按教材表 1.2.1 常见仪器的极限误差填写。',
-                'en': 'See instrument manual or Table 1.2.1 in the textbook.',
+                'zh': '填写仪器说明书上标注的最大允许误差，或查教材表 1.2.1 常见仪器的极限误差：\n'
+                      '• 钢板尺（1 mm 分度）：±0.10 ~ ±0.20 mm；\n'
+                      '• 游标卡尺（0.02 mm）：±0.02 mm；\n'
+                      '• 螺旋测微器：±0.004 mm；\n'
+                      '• 物理天平：±0.04 g。',
+                'en': 'Enter the maximum permissible error of the instrument. '
+                      'See Table 1.2.1 in the textbook for common values.',
             },
-            'default': 0.01,
+            'default': 0.01,                             # 默认值 0.01
         },
-        # -------- 仪器误差分布 --------
+
+        # ================================================================
+        # 输入项 3：仪器误差分布类型
+        # ----------------------------------------------------------------
+        # 对应 calculate() 中的参数名：distribution
+        # 类型：choice（单选项，返回选中的 value 字符串）
+        # ----------------------------------------------------------------
         {
             'name': 'distribution',
             'label': {
@@ -80,6 +127,7 @@ UI_SPEC = {
             },
             'type': 'choice',
             'options': [
+                # 每项包含 value（传给 core 的值）与 label（界面显示文字）
                 {'value': 'uniform',
                  'label': {'zh': '均匀分布（÷√3）', 'en': 'Uniform (÷√3)'}},
                 {'value': 'normal',
@@ -90,14 +138,20 @@ UI_SPEC = {
                  'label': {'zh': '反正弦分布（÷√2）', 'en': 'Arcsine (÷√2)'}},
             ],
             'hint': {
-                'zh': '默认按教材推荐采用均匀分布。若仪器说明书明确其他分布，'
-                      '请按教材式(1.2.6)下方的说明选择。',
-                'en': 'Default is uniform distribution as recommended. '
-                      'Choose others if the manual specifies.',
+                'zh': '按教材式(1.2.6)下方说明：默认取均匀分布（÷√3）。\n'
+                      '若仪器说明书给出了其他分布类型，请按上表选对应的除数。',
+                'en': 'By default, uniform distribution (÷√3) is used. '
+                      'Choose another divisor if the instrument specifies.',
             },
-            'default': 'uniform',
+            'default': 'uniform',                        # 默认选中均匀分布
         },
-        # -------- 物理量单位（用于最终结果表达式） --------
+
+        # ================================================================
+        # 输入项 4：物理量单位（仅用于显示）
+        # ----------------------------------------------------------------
+        # 对应 calculate() 中的参数名：unit_name
+        # 类型：text（单行自由文本，不参与数值计算）
+        # ----------------------------------------------------------------
         {
             'name': 'unit_name',
             'label': {
@@ -106,146 +160,17 @@ UI_SPEC = {
             },
             'type': 'text',
             'hint': {
-                'zh': '可选，用于在最终结果中附带单位（例如 g、mm、V）。留空则不加单位。',
-                'en': 'Optional. Used in the final result expression '
-                      '(e.g., g, mm, V). Leave empty to omit.',
+                'zh': '可选。用于在“测量结果表示”一行中附带单位，例如 g、mm、V。',
+                'en': 'Optional. Used in the final result expression, e.g. g / mm / V.',
             },
-            'default': '',
+            'default': '',                               # 默认空字符串（不加单位）
         },
-    ],
-
-    'outputs': [
-        {'name': 'avg', 'label': {'zh': '平均值 x̄', 'en': 'Average x̄'}},
-        {'name': 'S', 'label': {'zh': '标准偏差 S', 'en': 'Standard Deviation S'}},
-        {'name': 'A', 'label': {'zh': 'A 类不确定度 u_A', 'en': 'Type A Uncertainty u_A'}},
-        {'name': 'B', 'label': {'zh': 'B 类不确定度 u_B', 'en': 'Type B Uncertainty u_B'}},
-        {'name': 'total', 'label': {'zh': '合成不确定度 u', 'en': 'Combined Uncertainty u'}},
-        {'name': 'Ur_percent', 'label': {'zh': '相对不确定度 U_r (%)', 'en': 'Relative Uncertainty U_r (%)'}},
-        {'name': 'n', 'label': {'zh': '数据个数 n', 'en': 'Number of data n'}},
-        {'name': 'result_expr', 'label': {'zh': '测量结果表示', 'en': 'Measurement Result'}},
-        {'name': 'confidence', 'label': {'zh': '置信概率 P', 'en': 'Confidence Probability P'}},
-    ],
-
-    'func': 'calculate',
+    ]
 }
 
 
-# ============================================================
-# 2. 核心计算函数
-# ============================================================
-def calculate(data, instrument_error, distribution='uniform',
-              unit_name='', precision=3):
-    """
-    不确定度估算与测量结果表示。
-
-    参数:
-        data            : list of float，直接测量数据（至少 1 个）
-        instrument_error: float，仪器误差 Δ_仪
-        distribution    : str，仪器误差的分布类型（'uniform'/'normal'/
-                          'triangular'/'arcsine'）
-        unit_name       : str，物理量单位（可选）
-        precision       : int，保留小数位数（仅用于显示）
-
-    返回:
-        dict 或 None
-    """
-    if not data:
-        return None
-
-    n = len(data)
-    avg = sum(data) / n
-
-    # ---------- A 类不确定度 ----------
-    if n >= 2:
-        sum_sq = sum((x - avg) ** 2 for x in data)
-        S = math.sqrt(sum_sq / (n - 1))
-        A = math.sqrt(sum_sq / (n * (n - 1)))
-    else:
-        S = 0.0
-        A = 0.0
-
-    # ---------- B 类不确定度 ----------
-    divisors = {
-        'uniform': math.sqrt(3),
-        'normal': 3.0,
-        'triangular': math.sqrt(6),
-        'arcsine': math.sqrt(2),
-    }
-    k = divisors.get(distribution, math.sqrt(3))
-    B = instrument_error / k
-
-    # ---------- 合成不确定度 ----------
-    total = math.sqrt(A ** 2 + B ** 2)
-
-    # ---------- 相对不确定度 ----------
-    if abs(avg) > 1e-15:
-        Ur = total / abs(avg) * 100.0
-    else:
-        Ur = 0.0
-
-    # ---------- 测量结果表示 ----------
-    unit_suffix = f" {unit_name}" if unit_name else ""
-    result_expr = (f"x = ({avg:.{precision}f} ± "
-                   f"{total:.{precision}f}){unit_suffix}")
-
-    return {
-        'avg': avg,
-        'S': S,
-        'A': A,
-        'B': B,
-        'total': total,
-        'Ur_percent': Ur,
-        'n': n,
-        'result_expr': result_expr,
-        'confidence': 0.683,
-    }
-
-
-# ============================================================
-# 3. 独立运行入口
-# ============================================================
-def main():
-    print("不确定度估算与测量结果表示")
-    print("(Uncertainty Estimation and Result Expression)")
-    print("=" * 50)
-
-    try:
-        s = input("请输入直接测量数据（以空格分隔，例如：27.03 27.08 27.07 27.01 27.05）：").strip()
-        if not s:
-            print("未输入数据。")
-            return
-        data = [float(x) for x in s.split()]
-
-        instr = float(input("请输入仪器误差 Δ_仪（例如 0.04）：").strip())
-
-        print("请选择仪器误差的分布类型：")
-        options = UI_SPEC['inputs'][2]['options']
-        for i, opt in enumerate(options, 1):
-            print(f"  {i}. {opt['label']['zh']}")
-        idx = int(input("请输入编号（默认 1）：").strip() or "1")
-        distribution = options[idx - 1]['value']
-
-        unit_name = input("请输入物理量单位（例如 g，留空不加）：").strip()
-    except (ValueError, IndexError):
-        print("输入格式错误。")
-        return
-
-    result = calculate(data, instr, distribution, unit_name)
-    if result is None:
-        print("计算失败，请检查输入。")
-        return
-
-    print("=" * 50)
-    print(f"平均值 x̄            : {result['avg']:.3f}")
-    print(f"标准偏差 S          : {result['S']:.4f}")
-    print(f"A 类不确定度 u_A    : {result['A']:.4f}")
-    print(f"B 类不确定度 u_B    : {result['B']:.4f}")
-    print(f"合成不确定度 u      : {result['total']:.4f}")
-    print(f"相对不确定度 U_r    : {result['Ur_percent']:.2f}%")
-    print(f"数据个数 n          : {result['n']}")
-    print(f"测量结果表示        : {result['result_expr']}")
-    print(f"置信概率 P          : {result['confidence']}")
-
-
-if __name__ == "__main__":
-    main()
+# ----------------------------------------------------------------------------
+# A-3. 二级窗口初始尺寸
+#     格式："宽x高"，单位像素；覆盖通用 UI 的默认值。
+# ----------------------------------------------------------------------------
+DEFAULT_WINDOW_SIZE = "800x750"
