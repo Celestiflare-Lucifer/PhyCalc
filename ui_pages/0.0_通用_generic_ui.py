@@ -150,7 +150,7 @@ UI_SPEC_OVERRIDE = None
 #     用户仍可手动拖动窗口边框改变大小。
 #     专用 UI 若也定义了 DEFAULT_WINDOW_SIZE，则专用 UI 优先。
 # ----------------------------------------------------------------------------
-DEFAULT_WINDOW_SIZE = "750x600"
+DEFAULT_WINDOW_SIZE = "800x750"
 
 # ============================================================================
 # 【A】结束   下面内容在复制模板时不需要包含
@@ -569,7 +569,8 @@ def _build_ui(parent, settings, core_module, override_module=None):
                                 tk.END,
                                 L[current_lang]['invalid_error'] + "\n")
                             return
-                if not values:
+                # ★ 若参数标记为 optional=True，则允许留空（传空列表）
+                if not values and not param.get('optional', False):
                     output_text.insert(
                         tk.END,
                         L[current_lang]['empty_error'] + "\n")
