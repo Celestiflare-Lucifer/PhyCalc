@@ -1,48 +1,61 @@
 # -*- coding: utf-8 -*-
 """
-实验中文名：常用的实验数据处理方法
-实验英文名：Common Data Processing Methods
+专用 UI - 常用的实验数据处理方法
+文件名：1.4_常用的实验数据处理方法_common_data_processing_ui.py
 
-文件名：1.4_常用的实验数据处理方法_common_data_processing_core.py
-章节：第 1 章第 4 节
+本文件只包含从 0.0_通用_generic_ui.py 的【A】区复制的配置变量。
+通用窗口构建、控件布局、语言切换、字体调节等逻辑
+全部由通用界面统一实现。
 
-依据教材：冯放, 牟艳秋. 大学物理实验[M]. 北京: 高等教育出版社, 2017.
+主菜单加载规则：
+    · 若本文件未定义 open_page()，则本文件被视为「配置模块」，
+      其 LANG_OVERRIDE / UI_SPEC_OVERRIDE / DEFAULT_WINDOW_SIZE
+      会被传给通用界面，覆盖其默认值；
+    · 若本文件定义了 open_page()，主菜单会直接调用它（高级用法）。
 
-本实验实现教材 1.4 节中两种可数值化的数据处理方法：
-    ① 最小二乘法（Least Squares）
-       对任意一组 (x, y) 数据做线性拟合 y = b0 + b1·x
-       公式参考教材式 (1.4.5)：
-           b1 = [ n·Σxiyi − Σxi·Σyi ] / [ n·Σxi² − (Σxi)² ]
-           b0 = ȳ − b1·x̄
-       附加输出：相关系数 r，用于判断线性拟合质量。
-
-    ② 逐差法（Successive Difference）
-       用于处理自变量等间隔、因变量为线性响应的数据（如焦利秤测弹簧劲度系数）。
-       将数据平分为前后两组，对应项相减求差：
-           Δy_i = y_{n/2+i} − y_i,  Δx_i = x_{n/2+i} − x_i
-       最后以 斜率 = ΣΔy_i / ΣΔx_i 作为待定系数的估计。
-       要求 x、y 数据个数相同且为偶数，否则无法分组。
-
-教材中另外两种方法（列表法、作图法）不涉及数值计算，故本模块不实现。
+--------------------------------------------------------------------
+【教材依据】
+    本实验对应教材 1.4 节「常用的实验数据处理方法」，包含：
+      · 列表法        —— 仅用于记录，不涉及数值计算
+      · 作图法        —— 手工作图，本程序不提供
+      · 最小二乘法    —— 实现为线性拟合，输出 b1、b0、r
+      · 逐差法        —— 处理等间隔数据，输出 Δy、Δx、斜率
+--------------------------------------------------------------------
 """
 
-import math
-import sys
-
-
 # ============================================================
-# 1. UI 规格定义
+# 【A】个性化配置区
 # ============================================================
-UI_SPEC = {
-    'title': {
-        'zh': '常用的实验数据处理方法',
-        'en': 'Common Data Processing Methods',
-    },
-    'chapter': 1,
-    'section': 4,
 
+# ----------------------------------------------------------------------------
+# A-1. 语言覆盖
+#     本实验沿用通用界面的所有提示文字，不新增，故设为 None。
+#     如想覆盖某条文字，可写：
+#         LANG_OVERRIDE = {
+#             'zh': {'calculate': '开始处理'},
+#             'en': {'calculate': 'Process'},
+#         }
+# ----------------------------------------------------------------------------
+LANG_OVERRIDE = None
+
+
+# ----------------------------------------------------------------------------
+# A-2. UI_SPEC 覆盖
+#     本实验的输入结构由 core 文件定义，这里“整体替换 inputs 数组”，
+#     目的是为本实验的每个输入项补充更详尽、更贴合教材的提示文字。
+#
+#     ⚠️ 注意：这里是“整体替换”，不是“逐项合并”。
+#        如果只想改某一项的提示，也必须写出完整的 inputs 数组，
+#        且数组顺序与 core 文件一致。
+# ----------------------------------------------------------------------------
+UI_SPEC_OVERRIDE = {
     'inputs': [
-        # -------- 处理方法选择 --------
+        # ================================================================
+        # 输入项 1：处理方法（单选）
+        # ----------------------------------------------------------------
+        # 对应 calculate() 的参数名：method
+        # 类型：choice —— 返回用户选中项的 value 字符串
+        # ----------------------------------------------------------------
         {
             'name': 'method',
             'label': {
@@ -51,6 +64,8 @@ UI_SPEC = {
             },
             'type': 'choice',
             'options': [
+                # value 会作为字符串传给 calculate()
+                # label 是界面上显示的中英文文字
                 {'value': 'least_squares',
                  'label': {'zh': '最小二乘法',
                            'en': 'Least Squares'}},
@@ -59,17 +74,28 @@ UI_SPEC = {
                            'en': 'Successive Difference'}},
             ],
             'hint': {
-                'zh': '最小二乘法：适用于任意一组 (x, y) 数据对的线性拟合。\n'
-                      '逐差法：适用于 x 等间隔、y 为线性响应的数据；\n'
-                      '        要求 x、y 数据个数相同且为偶数。',
-                'en': 'Least Squares: linear fit for any (x, y) pairs.\n'
-                      'Difference: for evenly spaced x with linear response;\n'
-                      'requires even number of data points.',
+                'zh': '按教材 1.4 节，本程序提供以下两种数值处理方法：\n'
+                      '• 最小二乘法：适用于任意一组 (x, y) 数据对，'
+                      '输出斜率 b1、截距 b0 与相关系数 r；\n'
+                      '• 逐差法：适用于 x 等间隔、y 为线性响应的数据，'
+                      '输出平均 Δy、平均 Δx 与斜率。\n'
+                      '（列表法与作图法属于手工处理，本程序不提供）',
+                'en': 'Two numerical methods are provided:\n'
+                      '• Least Squares: linear fit for any (x, y) pairs, '
+                      'returns slope b1, intercept b0, and correlation r;\n'
+                      '• Difference: for evenly spaced x with linear response, '
+                      'returns average Δy, Δx, and slope.\n'
+                      '(List and graph methods are manual and not provided.)',
             },
             'default': 'least_squares',
         },
 
-        # -------- 自变量 x --------
+        # ================================================================
+        # 输入项 2：自变量 x
+        # ----------------------------------------------------------------
+        # 对应 calculate() 的参数名：x_data
+        # 类型：list —— 多行输入，可增删，每行前缀显示为 x_1、x_2…
+        # ----------------------------------------------------------------
         {
             'name': 'x_data',
             'label': {
@@ -77,18 +103,28 @@ UI_SPEC = {
                 'en': 'Independent Variable x',
             },
             'type': 'list',
-            'initial': 6,
+            'initial': 6,                                # 初始显示 6 行
             'item_prefix': {'zh': 'x', 'en': 'x'},
             'unit': '',
             'hint': {
-                'zh': '请输入自变量 x 的取值。数量应与下方 y 数据相同。',
-                'en': 'Enter independent variable values. '
-                      'Count must equal the y data below.',
+                'zh': '请输入自变量 x 的取值。\n'
+                      '• 最小二乘法：数量 ≥ 2；\n'
+                      '• 逐差法：应等间隔，数量与 y 相同且为偶数。\n'
+                      '例如：教材例中 m = 0, 10, 20, …, 90（单位 g）。',
+                'en': 'Enter independent variable values.\n'
+                      '• Least Squares: at least 2;\n'
+                      '• Difference: evenly spaced, even count, same as y.\n'
+                      'Example: m = 0, 10, 20, …, 90 (in grams).',
             },
             'default': [],
         },
 
-        # -------- 因变量 y --------
+        # ================================================================
+        # 输入项 3：因变量 y
+        # ----------------------------------------------------------------
+        # 对应 calculate() 的参数名：y_data
+        # 类型：list —— 与 x 一一对应
+        # ----------------------------------------------------------------
         {
             'name': 'y_data',
             'label': {
@@ -100,189 +136,25 @@ UI_SPEC = {
             'item_prefix': {'zh': 'y', 'en': 'y'},
             'unit': '',
             'hint': {
-                'zh': '请输入因变量 y 的取值，按与 x 一一对应的顺序填写。\n'
-                      '• 最小二乘法：个数 ≥ 2 即可；\n'
-                      '• 逐差法：个数必须为偶数（如 4、6、10）。',
+                'zh': '请按与 x 相同的顺序输入因变量 y。\n'
+                      '• 最小二乘法：数量应 ≥ 2；\n'
+                      '• 逐差法：数量必须与 x 相同且为偶数'
+                      '（如 4、6、10 个）。\n'
+                      '例如：教材例中 L = 3.25, 4.37, 5.49, …, 13.27（单位 cm）。',
                 'en': 'Enter dependent variable values in the same order as x.\n'
-                      '• Least Squares: at least 2 pairs;\n'
-                      '• Difference: even count required (e.g., 4, 6, 10).',
+                      '• Least Squares: at least 2;\n'
+                      '• Difference: same count as x and even.\n'
+                      'Example: L = 3.25, 4.37, 5.49, …, 13.27 (in cm).',
             },
             'default': [],
         },
-    ],
-
-    'outputs': [
-        # 最小二乘法输出
-        {'name': 'slope',     'label': {'zh': '斜率 b1',      'en': 'Slope b1'}},
-        {'name': 'intercept', 'label': {'zh': '截距 b0',      'en': 'Intercept b0'}},
-        {'name': 'r',         'label': {'zh': '相关系数 r',   'en': 'Correlation r'}},
-
-        # 逐差法输出
-        {'name': 'dy_avg',    'label': {'zh': '平均 Δy',      'en': 'Average Δy'}},
-        {'name': 'dx_avg',    'label': {'zh': '平均 Δx',      'en': 'Average Δx'}},
-
-        # 共用输出
-        {'name': 'n',         'label': {'zh': '数据对数 n',   'en': 'Number of pairs'}},
-    ],
-
-    'func': 'calculate',
+    ]
 }
 
 
-# ============================================================
-# 2. 核心计算函数
-# ============================================================
-def calculate(method, x_data, y_data, precision=3):
-    """
-    根据所选方法处理数据。
-
-    参数:
-        method    : str，'least_squares' 或 'difference'
-        x_data    : list of float，自变量
-        y_data    : list of float，因变量
-        precision : int，小数位数（仅用于显示，不影响计算）
-
-    返回:
-        dict 或 None
-    """
-    if not x_data or not y_data:
-        return None
-    if len(x_data) != len(y_data):
-        return None
-    n = len(x_data)
-    if n < 2:
-        return None
-
-    if method == 'least_squares':
-        return _least_squares(x_data, y_data)
-    elif method == 'difference':
-        return _successive_difference(x_data, y_data)
-    else:
-        return None
-
-
-def _least_squares(x_data, y_data):
-    """
-    最小二乘法线性拟合 y = b0 + b1·x。
-
-    公式（教材式 1.4.5）：
-        b1 = [ n·Σxiyi − Σxi·Σyi ] / [ n·Σxi² − (Σxi)² ]
-        b0 = ȳ − b1·x̄
-    相关系数：
-        r = [ n·Σxiyi − Σxi·Σyi ] /
-            sqrt( [n·Σxi² − (Σxi)²] · [n·Σyi² − (Σyi)²] )
-    """
-    n = len(x_data)
-    sum_x = sum(x_data)
-    sum_y = sum(y_data)
-    sum_xy = sum(xi * yi for xi, yi in zip(x_data, y_data))
-    sum_x2 = sum(xi ** 2 for xi in x_data)
-    sum_y2 = sum(yi ** 2 for yi in y_data)
-
-    denom = n * sum_x2 - sum_x ** 2
-    if abs(denom) < 1e-15:
-        # x 全部相同，无法拟合
-        return None
-
-    b1 = (n * sum_xy - sum_x * sum_y) / denom
-    b0 = (sum_y - b1 * sum_x) / n
-
-    # 相关系数
-    num_r = n * sum_xy - sum_x * sum_y
-    denom_r = math.sqrt((n * sum_x2 - sum_x ** 2) *
-                        (n * sum_y2 - sum_y ** 2))
-    r = num_r / denom_r if denom_r > 1e-15 else 0.0
-
-    return {
-        'slope': b1,
-        'intercept': b0,
-        'r': r,
-        'n': n,
-    }
-
-
-def _successive_difference(x_data, y_data):
-    """
-    逐差法处理等间隔数据。
-
-    将数据平分为前后两组，对应项相减：
-        Δy_i = y[n/2 + i] − y[i]
-        Δx_i = x[n/2 + i] − x[i]
-    最后以 ΣΔy / ΣΔx 作为线性系数估计。
-    """
-    n = len(x_data)
-    if n % 2 != 0:
-        # 奇数个数据无法平分两组
-        return None
-    half = n // 2
-
-    dy_list = [y_data[half + i] - y_data[i] for i in range(half)]
-    dx_list = [x_data[half + i] - x_data[i] for i in range(half)]
-
-    sum_dy = sum(dy_list)
-    sum_dx = sum(dx_list)
-    dy_avg = sum_dy / half
-    dx_avg = sum_dx / half
-
-    slope = sum_dy / sum_dx if abs(sum_dx) > 1e-15 else 0.0
-
-    return {
-        'slope': slope,
-        'dy_avg': dy_avg,
-        'dx_avg': dx_avg,
-        'n': n,
-    }
-
-
-# ============================================================
-# 3. 独立运行入口
-# ============================================================
-def main():
-    print("常用的实验数据处理方法")
-    print("(Common Data Processing Methods)")
-    print("=" * 50)
-
-    print("请选择处理方法：")
-    print("  1. 最小二乘法 (Least Squares)")
-    print("  2. 逐差法 (Successive Difference)")
-    try:
-        choice = input("请输入编号（默认 1）：").strip() or "1"
-        method = 'least_squares' if choice == "1" else 'difference'
-
-        x_input = input("请输入自变量 x 数据（以空格分隔）：").strip()
-        if not x_input:
-            print("未输入 x 数据。")
-            return
-        x_data = [float(v) for v in x_input.split()]
-
-        y_input = input("请输入因变量 y 数据（以空格分隔）：").strip()
-        if not y_input:
-            print("未输入 y 数据。")
-            return
-        y_data = [float(v) for v in y_input.split()]
-    except ValueError:
-        print("输入格式错误，请输入数字。")
-        return
-
-    result = calculate(method, x_data, y_data)
-    if result is None:
-        print("计算失败，请检查输入：")
-        print("  · x、y 数量是否相同？")
-        print("  · 逐差法是否使用了偶数个数据？")
-        return
-
-    print("=" * 50)
-    if method == 'least_squares':
-        print(f"斜率 b1          : {result['slope']:.4f}")
-        print(f"截距 b0          : {result['intercept']:.4f}")
-        print(f"相关系数 r       : {result['r']:.6f}")
-        print(f"数据对数 n       : {result['n']}")
-    else:
-        print(f"平均 Δy          : {result['dy_avg']:.4f}")
-        print(f"平均 Δx          : {result['dx_avg']:.4f}")
-        print(f"斜率 (ΣΔy/ΣΔx)   : {result['slope']:.4f}")
-        print(f"数据对数 n       : {result['n']}")
-
-
-if __name__ == "__main__":
-    main()
+# ----------------------------------------------------------------------------
+# A-3. 二级窗口初始尺寸
+#     格式："宽x高"，单位像素；覆盖通用 UI 的默认值。
+#     由于本实验输入项较多（3 组），窗口高度适当增大。
+# ----------------------------------------------------------------------------
+DEFAULT_WINDOW_SIZE = "700x600"
