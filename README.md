@@ -429,7 +429,7 @@ print(result)
 
 **祝大家实验顺利，报告一次过。**
 
-— 星辰蝶语（Celestiflare Lucifer）
+—— 星辰蝶语（Celestiflare Lucifer）
 2026 年 9 月
 
 ---
