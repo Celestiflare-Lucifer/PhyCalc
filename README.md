@@ -453,33 +453,25 @@ print(result)
 
 **版本号命名规则**：本项目遵循 [SemVer](https://semver.org/lang/zh-CN/) 的 `MAJOR.MINOR.PATCH` 三段式版本号，并结合自身**插件化、内容驱动**的特点，做出如下约定：
 
-- **PATCH**：新增实验、修复实验中的错误——属于"内容"层面的补充；
-- **MINOR**：修改 `main.py` 或两个通用模板——属于"框架"层面的变更；
-- **MAJOR**：正式打包发布，进入稳定版本阶段。
+- **PATCH**：新增实验、修复实验中的错误，或者对 `main.py` 与两个通用模板进行**不改变扩展接口**的小功能调整（如新增按钮、调整间距、微调默认值）——凡是不影响"他人如何编写实验"的改动，皆属"内容"层面的补充；
+- **MINOR**：调整 `main.py` 或两个通用模板的**整体框架、导航结构、模板接口约定或命名规范**——凡是会让已有实验或贡献者需要重新适配的改动，皆属"框架"层面的变更；
+- **MAJOR**：正式打包发布，进入稳定版本阶段；此后若出现不向后兼容的大规模改动，也升 MAJOR。
 
-之所以把"新增实验"归为 PATCH，是因为本项目采用插件化结构：新增实验不影响已有实验的运行，也不改变扩展接口，属于对框架的内容填充。只有当框架本身（导航逻辑、模板接口、命名规范）发生变化时，才递增 MINOR。
+> 之所以把"新增实验"归为 PATCH，是因为本项目采用插件化结构：新增实验不影响已有实验的运行，也不改变扩展接口，属于对框架的内容填充。只有当框架本身（导航逻辑、模板接口、命名规范）发生变化时，才递增 MINOR。
 
 ### 版本列表
-
 <table><thead><tr><th width="10%">版本</th><th width="18%">主题</th><th width="12%">更新时间</th><th>更新内容</th></tr></thead><tbody>
-<tr><td rowspan="4"><b>v0.3.0</b><br><small>当前版本</small></td><td rowspan="4">主菜单章节分级</td><td rowspan="4">2026.9.12</td><td>主菜单从"平铺所有实验按钮"重构为<b>章节 → 小节两级导航</b>：<br>· 章节视图显示所有章，例如 <code>第 1 章 数据处理与不确定度估算</code><br>· 点击章节进入该章的小节列表，例如 <code>1.2 不确定度估算与测量结果表示</code><br>· 小节视图顶部提供 <code>←返回</code> 按钮。</td></tr>
-<tr><td>新增 <code>CHAPTER_NAMES</code> 配置项，可为每一章自定义中英文名称；也支持在 core 文件的 <code>UI_SPEC</code> 中通过 <code>chapter_name</code> 字段单独定义。</td></tr>
-<tr><td>新增"其他实验"入口：不符合 <code>n.m_中文名_英文名_core.py</code> 命名规范的文件会被收纳在其中，不再混入章节列表。</td></tr>
-<tr><td>实验数量不变，仍为 3 个。</td></tr>
-<tr><td rowspan="4"><b>v0.2.1</b></td><td rowspan="4">扩充实验 + 通用 UI 增强</td><td rowspan="4">2026.9.12</td><td>新增实验 <b>1.4 常用的实验数据处理方法</b>（最小二乘法、逐差法）。</td></tr>
-<tr><td>新增实验 <b>2.1 长度测量和体积测量</b>（含金属丝直径、小球体积、空心圆柱体体积、实心圆柱体密度 5 个子测量）。</td></tr>
-<tr><td>通用 UI 的 <code>calculate()</code> 函数新增 <code>optional</code> 参数支持：列表型输入若标记为 <code>optional: True</code>，留空时不会触发"请至少输入一个有效数据"的提示，而是把空列表传给 core 处理。这样便可在同一个实验界面里支持"多个子测量，按类型选择，只填需要的输入"的交互。</td></tr>
-<tr><td>列表型输入的前缀统一改为下划线分隔（<code>x_1</code>、<code>x_2</code>、…），便于识别下标含义。</td></tr>
-<tr><td rowspan="3"><b>v0.2.0</b></td><td rowspan="3">命名规范重构</td><td rowspan="3">2026.9.11</td><td>引入新的文件命名规范：<code>n.m_中文名_英文名_core.py</code> / <code>n.m_中文名_英文名_ui.py</code>。<br>· <code>n</code> 为章号，<code>m</code> 为节号。<br>· 主菜单按 <code>(n, m)</code> 从小到大排序，显示为 <code>1.2 不确定度估算与测量结果表示</code>。</td></tr>
-<tr><td>UI 文件后缀从 <code>_page.py</code> 改为 <code>_ui.py</code>。</td></tr>
-<tr><td>通用 UI 模板重命名为 <code>0.0_通用_generic_ui.py</code>，并在原有基础上扩展：新增 <code>list</code>、<code>float</code>、<code>int</code>、<code>text</code>、<code>choice</code> 五种输入类型，以及 <code>hint</code>（提示）、<code>unit</code>（单位）、<code>item_prefix</code>（前缀）等字段。</td></tr>
-<tr><td rowspan="7"><b>v0.1.0</b></td><td rowspan="7">最初的版本</td><td rowspan="7">2026.9.10</td><td>初步确立项目整体架构，划分出 <code>main.py</code> 与 <code>ui_pages/</code>、<code>core_calculations/</code> 两个功能目录。</td></tr>
-<tr><td>完成主菜单的扫描与渲染逻辑，使用 <code>importlib</code> 动态加载 core 与 ui 模块，不依赖固定文件名。</td></tr>
-<tr><td>完成模板文件（<code>00_通用_generic_page.py</code>、<code>00_通用_generic_core.py</code>）的初版代码，集成 <code>UI_SPEC</code> 与 <code>calculate()</code> 骨架。</td></tr>
-<tr><td>支持工具栏语言按钮实时切换、精度按钮直接点开、字号实时缩放。</td></tr>
-<tr><td>首个正式实验：<b>平均值与不确定度计算</b>（即后来的 1.2 不确定度估算与测量结果表示）。</td></tr>
-<tr><td>实现该实验的核心算法与二级界面，作为整个框架的功能验证。</td></tr>
-<tr><td>计算逻辑采用命令行交互：读取 6 个测量数据与仪器误差，输出平均值、实验标准偏差 S、A 类与 B 类不确定度及合成不确定度。</td></tr>
+<tr><td rowspan="2"><b>v0.3.1</b><br><small>当前版本</small></td><td rowspan="2">按钮自适应 + 扩充实验</td><td rowspan="2">2026.9.20</td><td>主菜单按钮宽度根据最长实验名自适应，切换语言或字号时自动重算，避免文字被截断。</td></tr>
+<tr><td>新增实验 <b>2.2、2.3</b>。</td></tr>
+<tr><td rowspan="3"><b>v0.3.0</b></td><td rowspan="3">章节分级 + 扩充实验</td><td rowspan="3">2026.9.12</td><td>主菜单从"平铺所有实验按钮"重构为<b>章节 → 小节两级导航</b>，新增 <code>CHAPTER_NAMES</code> 配置项与"其他实验"入口。</td></tr>
+<tr><td>新增实验 <b>1.4 常用的实验数据处理方法</b>、<b>2.1 长度测量和体积测量</b>。</td></tr>
+<tr><td>通用 UI 的 <code>calculate()</code> 新增 <code>optional</code> 参数支持：列表型输入标记为 <code>optional: True</code> 后可留空，便于"多个子测量、按类型选择"的交互。</td></tr>
+<tr><td rowspan="3"><b>v0.2.0</b></td><td rowspan="3">命名规范重构</td><td rowspan="3">2026.9.11</td><td>引入新的文件命名规范 <code>n.m_中文名_英文名_core.py</code> / <code>_ui.py</code>，UI 文件后缀从 <code>_page.py</code> 改为 <code>_ui.py</code>。</td></tr>
+<tr><td>通用 UI 模板重构，新增 <code>list</code>、<code>float</code>、<code>int</code>、<code>text</code>、<code>choice</code> 五种输入类型，以及 <code>hint</code>、<code>unit</code>、<code>item_prefix</code> 字段。</td></tr>
+<tr><td>列表型输入的前缀统一改为下划线分隔（<code>x_1</code>、<code>x_2</code>、…）。</td></tr>
+<tr><td rowspan="3"><b>v0.1.0</b></td><td rowspan="3">最初的版本</td><td rowspan="3">2026.9.10</td><td>确立项目架构，划分出 <code>main.py</code> 与 <code>ui_pages/</code>、<code>core_calculations/</code> 两个功能目录。</td></tr>
+<tr><td>完成主菜单扫描渲染与两个通用模板的初版代码。</td></tr>
+<tr><td>首个实验：<b>平均值与不确定度计算</b>（即后来的 1.2 不确定度估算与测量结果表示），实现核心算法与二级界面，作为框架的功能验证。</td></tr>
 </tbody></table>
 
 ---
