@@ -15,6 +15,10 @@ PhyCalc - 格物算：大学物理实验数据处理工具
     1. core 文件中 UI_SPEC['chapter_name']（若定义）
     2. main.py 中的 CHAPTER_NAMES 常量
     3. 默认“第 n 章” / “Chapter n”
+
+按钮宽度：
+    自动根据当前视图中最长的按钮文字计算，保证所有按钮同宽且不被截断。
+    切换语言、调整字号时会自动重新计算。
 """
 import os
 import sys
@@ -22,11 +26,12 @@ import json
 import glob
 import importlib.util
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import messagebox, simpledialog
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-APP_VERSION = 'v0.3.1'
+APP_VERSION = 'v0.3.0'
 
 # ============================================================================
 # 章节名称配置（可选）
@@ -162,13 +167,44 @@ class MainApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     # ---------------------------------------------------------------
-    # 字体 / 工具栏
+    # 字体 / 按钮宽度 / 工具栏
     # ---------------------------------------------------------------
     def get_font(self, size=None):
         if size is None:
             size = self.font_size
         family = "Times New Roman" if self.lang == 'en' else "宋体"
         return (family, size)
+
+    def _calc_button_width(self, texts):
+        """
+        根据 texts 中最长的一条文字，计算按钮应该使用的宽度（字符单位）。
+        这样可以让同一个视图里的所有按钮同宽，且刚好容纳最长的文字。
+
+        参数:
+            texts : list of str —— 本视图中将要显示的所有按钮文字
+
+        返回:
+            int —— 建议的 width 值（tk.Button 的字符宽度单位）
+        """
+        if not texts:
+            return 30
+
+        font_tuple = self.get_font()
+        f = tkfont.Font(family=font_tuple[0], size=font_tuple[1])
+
+        # 最长文字的像素宽度
+        max_px = max(f.measure(t) for t in texts)
+
+        # 左右各加约 20 px 的内边距，避免文字紧贴按钮边缘
+        max_px += 40
+
+        # 换算为字符单位（tk.Button 的 width 以 "0" 的宽度为参考）
+        char_px = f.measure("0")
+        if char_px <= 0:
+            char_px = 8
+
+        width = int(max_px / char_px) + 1
+        return max(20, width)
 
     def create_toolbar(self):
         toolbar = tk.Frame(self.root, bg='lightgray', height=30)
@@ -294,7 +330,7 @@ class MainApp:
         self.settings_btn.config(font=font)
         self.increase_btn.config(font=font)
         self.decrease_btn.config(font=font)
-        # 重绘当前视图
+        # 重绘当前视图（宽度会随字号自动重算）
         self._render_main()
 
     # ---------------------------------------------------------------
@@ -435,11 +471,22 @@ class MainApp:
                      font=self.get_font()).pack(pady=20)
             return
 
+        # 收集所有按钮文字，用于自动计算宽度
+        texts = []
+        for chapter_num in sorted(self._chapter_data.keys()):
+            ch = self._chapter_data[chapter_num]
+            texts.append(self._format_chapter_label(chapter_num, ch.get('name')))
+        if self._non_standard:
+            texts.append(LANG[self.lang]['other_experiments'])
+
+        btn_width = self._calc_button_width(texts)
+
+        # 章节按钮
         for chapter_num in sorted(self._chapter_data.keys()):
             ch = self._chapter_data[chapter_num]
             text = self._format_chapter_label(chapter_num, ch.get('name'))
             btn = tk.Button(inner, text=text, font=self.get_font(),
-                            width=30,
+                            width=btn_width,
                             command=lambda c=chapter_num: self._enter_chapter(c))
             btn.pack(pady=6, ipady=6)
 
@@ -448,7 +495,7 @@ class MainApp:
             btn = tk.Button(inner,
                             text=LANG[self.lang]['other_experiments'],
                             font=self.get_font(),
-                            width=30,
+                            width=btn_width,
                             command=self._enter_non_std)
             btn.pack(pady=6, ipady=6)
 
@@ -485,10 +532,15 @@ class MainApp:
         if not ch:
             return
 
+        # 收集本视图所有按钮文字（包括返回按钮）
+        texts = [LANG[self.lang]['back']]
+        texts += [self._format_section_label(e) for e in ch['experiments']]
+        btn_width = self._calc_button_width(texts)
+
         # 返回按钮
         back_btn = tk.Button(inner, text=LANG[self.lang]['back'],
                              font=self.get_font(),
-                             width=30,
+                             width=btn_width,
                              command=self._back_to_chapters)
         back_btn.pack(pady=(0, 14), ipady=6)
 
@@ -496,7 +548,7 @@ class MainApp:
         for exp in ch['experiments']:
             text = self._format_section_label(exp)
             btn = tk.Button(inner, text=text, font=self.get_font(),
-                            width=30,
+                            width=btn_width,
                             command=lambda p=exp['path']: self.launch_experiment(p))
             btn.pack(pady=6, ipady=6)
 
@@ -519,10 +571,16 @@ class MainApp:
         inner = tk.Frame(outer)
         inner.pack()
 
+        # 收集文本
+        texts = [LANG[self.lang]['back']]
+        for exp in self._non_standard:
+            texts.append(exp['zh'] if self.lang == 'zh' else exp['en'])
+        btn_width = self._calc_button_width(texts)
+
         # 返回按钮
         back_btn = tk.Button(inner, text=LANG[self.lang]['back'],
                              font=self.get_font(),
-                             width=30,
+                             width=btn_width,
                              command=self._back_to_chapters)
         back_btn.pack(pady=(0, 14), ipady=6)
 
@@ -530,7 +588,7 @@ class MainApp:
         for exp in self._non_standard:
             text = exp['zh'] if self.lang == 'zh' else exp['en']
             btn = tk.Button(inner, text=text, font=self.get_font(),
-                            width=30,
+                            width=btn_width,
                             command=lambda p=exp['path']: self.launch_experiment(p))
             btn.pack(pady=6, ipady=6)
 
