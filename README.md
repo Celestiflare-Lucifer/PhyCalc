@@ -461,13 +461,15 @@ print(result)
 
 ### 版本列表
 <table><thead><tr><th width="10%">版本</th><th width="18%">主题</th><th width="12%">更新时间</th><th>更新内容</th></tr></thead><tbody>
-<tr><td rowspan="3"><b>v0.3.0</b><br><small>当前版本</small></td><td rowspan="3">章节分级 + 扩充实验</td><td rowspan="3">2026.9.12</td><td>主菜单从"平铺所有实验按钮"重构为<b>章节 → 小节两级导航</b>，新增 <code>CHAPTER_NAMES</code> 配置项与"其他实验"入口。</td></tr>
+<tr><td rowspan="2"><b>v0.3.1</b><br><small>当前版本</small></td><td rowspan="2">按钮自适应 + 扩充实验</td><td rowspan="2">2026.9.20</td><td>主菜单按钮宽度根据最长实验名自适应，切换语言或字号时自动重算，避免文字被截断。</td></tr>
+<tr><td>新增实验 <b>2.2、2.3</b>。</td></tr>
+<tr><td rowspan="3"><b>v0.3.0</b></td><td rowspan="3">章节分级 + 扩充实验</td><td rowspan="3">2026.9.12</td><td>主菜单从"平铺所有实验按钮"重构为<b>章节 → 小节两级导航</b>，新增 <code>CHAPTER_NAMES</code> 配置项与"其他实验"入口。</td></tr>
 <tr><td>新增实验 <b>1.4 常用的实验数据处理方法</b>、<b>2.1 长度测量和体积测量</b>。</td></tr>
 <tr><td>通用 UI 的 <code>calculate()</code> 新增 <code>optional</code> 参数支持：列表型输入标记为 <code>optional: True</code> 后可留空，便于"多个子测量、按类型选择"的交互。</td></tr>
-<tr><td rowspan="3"><b>v0.2.0</b></td><td rowspan="3">命名规范重构</td><td rowspan="3">2026.9.11</td><td>引入新的文件命名规范 <code>n.m_中文名_英文名_core.py</code> / <code>_ui.py</code>，UI 文件后缀从 <code>_page.py</code> 改为 <code>_ui.py</code>。</td></tr>
+<tr><td rowspan="3"><b>v0.2.0</b></td><td rowspan="3">命名规范重构</td><td rowspan="3">2026.9.10</td><td>引入新的文件命名规范 <code>n.m_中文名_英文名_core.py</code> / <code>_ui.py</code>，UI 文件后缀从 <code>_page.py</code> 改为 <code>_ui.py</code>。</td></tr>
 <tr><td>通用 UI 模板重构，新增 <code>list</code>、<code>float</code>、<code>int</code>、<code>text</code>、<code>choice</code> 五种输入类型，以及 <code>hint</code>、<code>unit</code>、<code>item_prefix</code> 字段。</td></tr>
 <tr><td>列表型输入的前缀统一改为下划线分隔（<code>x_1</code>、<code>x_2</code>、…）。</td></tr>
-<tr><td rowspan="3"><b>v0.1.0</b></td><td rowspan="3">最初的版本</td><td rowspan="3">2026.9.10</td><td>确立项目架构，划分出 <code>main.py</code> 与 <code>ui_pages/</code>、<code>core_calculations/</code> 两个功能目录。</td></tr>
+<tr><td rowspan="3"><b>v0.1.0</b></td><td rowspan="3">最初的版本</td><td rowspan="3">2026.9.9</td><td>确立项目架构，划分出 <code>main.py</code> 与 <code>ui_pages/</code>、<code>core_calculations/</code> 两个功能目录。</td></tr>
 <tr><td>完成主菜单扫描渲染与两个通用模板的初版代码。</td></tr>
 <tr><td>首个实验：<b>平均值与不确定度计算</b>（即后来的 1.2 不确定度估算与测量结果表示），实现核心算法与二级界面，作为框架的功能验证。</td></tr>
 </tbody></table>
@@ -477,7 +479,7 @@ print(result)
 <a id="license"></a>
 ## 📄 版本与许可
 
-- **当前版本**：v0.3.0（源码阶段，持续更新中）
+- **当前版本**：v0.3.1（源码阶段，持续更新中）
 - **计划版本**：v1.0（含便携版打包，待教材第一、二章或全部章节中所有涉及数据处理的小节的计算代码全部完成之后再发布）
 - **Python 版本**：3.8+
 - **依赖库**：仅标准库（Tkinter、json、math 等）
