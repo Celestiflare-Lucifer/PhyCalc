@@ -31,7 +31,7 @@ from tkinter import messagebox, simpledialog
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-APP_VERSION = 'v0.3.0'
+APP_VERSION = 'v0.3.1'
 
 # ============================================================================
 # 章节名称配置（可选）
